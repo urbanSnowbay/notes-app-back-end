@@ -13,13 +13,13 @@ class UsersService {
         // TODO: Verifikasi username, pastikan belum terdaftar
         await this.verifyNewUsername(username); // OK
         // TODO: Bila verifikasi berhasil, maka masukkan user baru ke database
-        const id = `user-${nanoid()}`; // OK
+        const id = `user-${nanoid(16)}`; // OK
 
         // Best practice dalam menyimpan password di database adalah dengan men-hashing password-nya. Untuk proses hash itu sendiri, kita akan gunakan package bernama bcrypt. Fungsi bcrypt.hash menerima dua parameter, yakni data dan saltRounds. Parameter data merupakan nilai yang ingin di-hash, pada kasus ini adalah 'password' yang diberikan oleh client. Sedangkan parameter saltRounds merupakan sebuah angka yang digunakan oleh algoritma bcrypt untuk menciptakan nilai string yang tidak dapat diprediksi. Nilai 10 merupakan standar dari saltRounds.
         // Fungsi bcrypt.hash akan mengembalikan nilai string yang merupakan hasil dari proses hash (hashedPassword). Nah, nilai inilah yang akan kita masukkan ke database sebagai password.
         const hashedPassword = await bcrypt.hash(password, 10);
         const query = {
-            text: 'INSERT INTO users VALUES ($1, $2, $3, $4) returning id',
+            text: 'INSERT INTO users VALUES($1, $2, $3, $4) RETURNING id',
             values: [id, username, hashedPassword, fullname],
         };
         const result = await this._pool.query(query);
@@ -42,7 +42,7 @@ class UsersService {
 
         // Jika result.rows.length menghasilkan nilai lebih dari 0, itu berarti username sudah ada di database. Pada saat ini terjadi, kita perlu membangkitkan error untuk memberitahu bahwa verifikasi username baru gagal.
         if (result.rows.length > 0) {
-            throw new InvariantError('Gagal menambahkan user. Username sudah digunakan');
+            throw new InvariantError('Gagal menambahkan user. Username sudah digunakan.');
         }
     }
 
