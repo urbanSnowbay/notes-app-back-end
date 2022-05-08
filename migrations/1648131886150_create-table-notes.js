@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 
+exports.shorthands = undefined;
 // migration utama kita tuliskan di dalam fungsi up dan kebutuhan rollback kita tuliskan di dalam fungsi down
 exports.up = (pgm) => {
     pgm.createTable('notes', {

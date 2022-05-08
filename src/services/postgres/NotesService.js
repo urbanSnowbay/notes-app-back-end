@@ -1,8 +1,8 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
-const { mapDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
+const { mapDBToModel } = require('../../utils');
 
 class NotesService {
     constructor() {
@@ -65,7 +65,7 @@ class NotesService {
         const result = await this._pool.query(query);
 
         // periksa nilai result.rows bila nilainya 0 (false) maka bangkitkan NotFoundError.
-        if (!result.rows[0]) {
+        if (!result.rows.length) {
             throw new NotFoundError('Gagal memperbarui catatan. Id tidak ditemukan');
         } 
     }
@@ -80,8 +80,8 @@ class NotesService {
         const result = await this._pool.query(query);
 
         // periksa nilai result.rows bila nilainya 0 (false) maka bangkitkan NotFoundError. 
-        if (!result.rows[0]) {
-            throw new NotFoundError('Gagal menghapus catatan. Id tidak ditemukan');
+        if (!result.rows.length) {
+            throw new NotFoundError('Catatan gagal dihapus. Id tidak ditemukan');
         }
     }
 }
