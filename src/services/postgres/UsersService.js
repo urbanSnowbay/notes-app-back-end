@@ -3,6 +3,7 @@ const { nanoid } = require('nanoid');
 const bcrypt = require('bcrypt');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
+const AuthenticationError = require('../../exceptions/AuthenticationError');
 
 class UsersService {
     constructor() {
@@ -59,6 +60,32 @@ class UsersService {
         }
         // Kembalikan fungsi getUserById dengan nilai user yang didapat pada result.rows[0].
         return result.rows[0];
+    }
+
+    async verifyUserCredential(username, password) {
+        const query = {
+            text: 'SELECT id, password FROM users WHERE username = $1',
+            values: [username],
+        };
+
+        const result = await this._pool.query(query);
+
+        if (!result.rows.length) {
+            throw new AuthenticationError('Kredensial yang Anda berikan salah');
+        }
+
+        // Selanjutnya (jika result.rows.length tidak kosong), dapatkan id dan password dari result.rows[0]. Untuk nilai password, kita tampung ke variabel hashedPassword ya biar tidak ambigu dengan variabel password di parameter.
+        const { id, password: hashedPassword } = result.rows[0];
+
+        // Untuk melakukan komparasi nilai string plain dan hashed menggunakan bcrypt, kita dapat memanfaatkan fungsi bcrypt.compare. Fungsi tersebut akan mengembalikan Promise boolean yang akan bernilai true bila nilai komparasi sesuai dan false bila nilai komparasi tidak sesuai. Dari nilai boolean tersebut, kita bisa mengetahui apakah password yang dikirim benar atau tidak.
+        const match = await bcrypt.compare(password, hashedPassword);
+
+        // Sekarang kita bisa evaluasi variabel match, jika hasilnya false, bangkitkan eror AuthenticationError dengan pesan ‘Kredensial yang Anda berikan salah’. Jika hasilnya true, kembalikan dengan nilai id user.
+        if (!match) {
+            throw new AuthenticationError('Kredensial yang Anda berikan salah');
+        }
+        return id;
+        // Nilai user id tersebut nantinya akan digunakan dalam membuat access token dan refresh token.
     }
 }
 
