@@ -3,22 +3,27 @@ const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const { mapDBToModel } = require('../../utils');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class NotesService {
     constructor() {
         this._pool = new Pool();
     }
 
-    async addNote({ title, body, tags }) {
+    // Pertama pada fungsi addNote, tambahkan properti owner pada parameter objek note. Kemudian, sesuaikan kueri dengan menambahkan nilai owner seperti ini:
+    async addNote({ 
+        title, body, tags, owner, 
+    }) {
         const id = nanoid(16);
         const createdAt = new Date().toISOString();
         const updatedAt = createdAt;
 
         // Selanjutnya buat objek query untuk memasukan notes baru ke database seperti ini.
         const query = {
-            text: 'INSERT INTO notes VALUES($1, $2, $3, $4, $5, $6) RETURNING id',
-            values: [id, title, body, tags, createdAt, updatedAt], 
+            text: 'INSERT INTO notes VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            values: [id, title, body, tags, createdAt, updatedAt, owner], 
         };
+        // Sekarang, setiap ada catatan yang masuk maka kolom owner akan ikut terisi. Dengan begitu, kita jadi tahu siapa pemilik dari catatan tersebut.
 
         // Untuk mengeksekusi query yang sudah dibuat, kita gunakan fungsi this._pool.query.
         const result = await this._pool.query(query);
@@ -31,11 +36,37 @@ class NotesService {
         return result.rows[0].id;
     }
 
-    async getNotes() {
+    // Fungsi getNotes tidak akan mengembalikan seluruh catatan yang disimpan pada tabel notes. Melainkan hanya catatan yang dimiliki oleh owner saja.
+    async getNotes(owner) {
+        const query = {
+            text: 'SELECT * FROM notes WHERE owner = $1',
+            values: [owner],
+        };
         // Di dalamnya kita dapatkan seluruh data notes yang ada di database dengan query “SELECT * FROM notes”.
-        const result = await this._pool.query('SELECT * FROM notes');
+        const result = await this._pool.query(query);
         // Kembalikan fungsi getNotes dengan nilai result.rows yang telah di mapping dengan fungsi mapDBToModel.
         return result.rows.map(mapDBToModel);
+    }
+
+    // Untuk proses pengecekan apakah catatan dengan ID yang diminta adalah hak pengguna, menggunakan fungsi baru yaitu verifyNoteOwner. Fungsi tersebut nantinya akan digunakan pada NotesHandler sebelum mendapatkan, mengubah, dan menghapus catatan berdasarkan id.
+    async verifyNoteOwner(id, owner) {
+        // Kemudian di dalamnya, lakukan kueri untuk mendapatkan objek note sesuai id;
+        const query = {
+            text: 'SELECT * FROM notes WHERE id = $1',
+            values: [id],
+        };
+        const result = await this._pool.query(query);
+
+        // bila objek note tidak ditemukkan, maka throw NotFoundError
+        if (!result.rows.length) {
+            throw new NotFoundError('Catatan tidak ditemukan');
+        }
+
+        // bila ditemukan, lakukan pengecekan kesesuaian owner-nya;  bila owner tidak sesuai, maka throw AuthorizationError.
+        const note = result.rows[0];
+        if (note.owner !== owner) {
+            throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
+        }
     }
 
     async getNoteById(id) {
