@@ -87,6 +87,17 @@ class UsersService {
         return id;
         // Nilai user id tersebut nantinya akan digunakan dalam membuat access token dan refresh token.
     }
+
+    async getUsersByUsername(username) {
+        const query = {
+            // Selanjutnya di dalamnya, tulis kueri untuk mendapatkan users (id, username, dan fullname) yang username-nya mengandung kata yang diberikan pada parameter username. Untuk melakukannya, kita gunakan LIKE expressions.
+            text: 'SELECT id, username, fullname FROM users WHERE username LIKE $1',
+            values: [`%${username}%`],
+        };
+
+        const result = await this._pool.query(query);
+        return result.rows;
+    }
 }
 
 module.exports = UsersService;
