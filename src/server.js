@@ -25,6 +25,11 @@ const collaborations = require('./api/collaborations');
 const CollaborationsService = require('./services/postgres/CollaborationsService');
 const CollaborationsValidator = require('./validator/collaborations');
 
+// Exports
+const _exports = require('./api/exports');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+const ExportsValidator = require('./validator/exports');
+
 const init = async () => {
     // Karena sekarang NotesService memiliki dependency terhadap CollaborationsService, jadi kita harus memberikan instance CollaborationsService ketika membuat instance NotesService. Untuk melakukannya, pindahkan posisi pembuatan instance CollaborationsService, tepat sebelum pembuatan instance NotesService, dan lampirkan instance CollaborationsService ketika membuat instance NotesService.
     const collaborationsService = new CollaborationsService(); 
@@ -96,6 +101,13 @@ const init = async () => {
                 collaborationsService,
                 notesService,
                 validator: CollaborationsValidator,
+            },
+        },
+        {
+            plugin: _exports,
+            options: {
+                service: ProducerService,
+                validator: ExportsValidator,
             },
         },
     ]);
