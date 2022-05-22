@@ -27,7 +27,8 @@
     "joi": "^17.6.0",
     "nanoid": "^3.3.0",
     "node-pg-migrate": "^6.2.1",
-    "pg": "^8.7.3"
+    "pg": "^8.7.3",
+    "redis": "^4.1.0"
   },
   "repository": {
     "type": "git",

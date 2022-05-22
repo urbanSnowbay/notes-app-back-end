@@ -37,10 +37,14 @@ const uploads = require('./api/uploads');
 const StorageService = require('./services/storage/StorageService');
 const UploadsValidator = require('./validator/uploads');
 
+// cache 
+const CacheService = require('./services/redis/CacheService');
+
 const init = async () => {
+    const cacheService = new CacheService();
     // Karena sekarang NotesService memiliki dependency terhadap CollaborationsService, jadi kita harus memberikan instance CollaborationsService ketika membuat instance NotesService. Untuk melakukannya, pindahkan posisi pembuatan instance CollaborationsService, tepat sebelum pembuatan instance NotesService, dan lampirkan instance CollaborationsService ketika membuat instance NotesService.
-    const collaborationsService = new CollaborationsService(); 
-    const notesService = new NotesService(collaborationsService);
+    const collaborationsService = new CollaborationsService(cacheService); 
+    const notesService = new NotesService(collaborationsService, cacheService);
     const usersService = new UsersService();
     const authenticationsService = new AuthenticationsService();
     const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
